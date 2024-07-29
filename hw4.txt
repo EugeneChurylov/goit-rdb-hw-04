@@ -1,0 +1,222 @@
+1. Tables creation
+
+USE librarymanagement;
+
+CREATE TABLE authors (
+  author_id INT AUTO_INCREMENT PRIMARY KEY,
+  author_name VARCHAR(50)
+);
+
+CREATE TABLE genres (
+  genre_id INT AUTO_INCREMENT PRIMARY KEY,
+  genre_name VARCHAR(50)
+);
+
+CREATE TABLE books (
+  book_id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(50),
+  publication_year YEAR,
+  author_id INT,
+   FOREIGN KEY (author_id) REFERENCES authors(author_id),
+  genre_id INT,
+   FOREIGN KEY (genre_id) REFERENCES genres(genre_id)
+);
+
+CREATE TABLE users (
+  user_id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50),
+  email VARCHAR(50)
+);
+
+CREATE TABLE borrowed_books (
+  borrow_id INT AUTO_INCREMENT PRIMARY KEY,
+  book_id INT,
+   FOREIGN KEY (book_id) REFERENCES books(book_id),
+  user_id INT,
+   FOREIGN KEY (user_id) REFERENCES users(user_id),
+  borrow_date DATE,
+  return_date DATE
+);
+
+
+2. Data filling
+
+INSERT INTO authors (author_id, author_name)
+VALUES 
+(1, 'Sapkowski'),
+(2, 'Tolkien')
+;
+
+INSERT INTO authors (genre_id, genre_name)
+VALUES 
+(1, 'Fantasy'),
+(2, 'Epic')
+;
+
+INSERT INTO books (book_id, title, publication_year, author_id, genre_id)
+VALUES 
+(1, 'Witcher', 1994, 1, 1),
+(2, 'Epic', 1954, 2, 2)
+;
+
+INSERT INTO users (user_id, username, email)
+VALUES 
+(1, 'Eugene', 'eugene@email.com'),
+(2, 'John', 'john@email.com')
+;
+
+INSERT INTO borrowed_books (borrow_id, book_id, user_id, borrow_date, return_date)
+VALUES 
+(1, 1, 1, '2024-07-01', '2024-07-24'),
+(2, 2, 1, '2024-06-03', '2024-06-18')
+;
+
+3.1 Indexing
+
+USE mydatabase;
+
+CREATE INDEX idx_orders_id ON orders(id);
+CREATE INDEX idx_products_id ON products(id);
+CREATE INDEX idx_customers_id ON customers(id);
+CREATE INDEX idx_employees_employee_id ON employees(employee_id);
+CREATE INDEX idx_shippers_id ON shippers(id);
+CREATE INDEX idx_categories_id ON categories(id);
+CREATE INDEX idx_suppliers_id ON suppliers(id);
+
+3.2 Keys
+
+USE mydatabase;
+
+ALTER TABLE order_details
+ADD CONSTRAINT fk_order
+FOREIGN KEY (order_id) REFERENCES orders(id);
+
+ALTER TABLE order_details
+ADD CONSTRAINT fk_product
+FOREIGN KEY (product_id) REFERENCES products(id);
+
+ALTER TABLE orders
+ADD CONSTRAINT fk_customer
+FOREIGN KEY (customer_id) REFERENCES customers(id);
+
+ALTER TABLE orders
+ADD CONSTRAINT fk_employee
+FOREIGN KEY (employee_id) REFERENCES employees(employee_id);
+
+ALTER TABLE orders
+ADD CONSTRAINT fk_shipper
+FOREIGN KEY (shipper_id) REFERENCES shippers(id);
+
+ALTER TABLE products
+ADD CONSTRAINT fk_category
+FOREIGN KEY (category_id) REFERENCES categories(id);
+
+ALTER TABLE products
+ADD CONSTRAINT fk_supplier
+FOREIGN KEY (supplier_id) REFERENCES suppliers(id);
+
+3.3 Tables unification
+
+SELECT 
+    od.*,     -- дані з order_details (псевдонім od)
+    o.*,      -- дані з orders (псевдонім o)
+    c.*,      -- дані з customers (псевдонім c)
+    p.*,      -- дані з products (псевдонім p)
+    cat.*,    -- дані з categories (псевдонім cat)
+    e.*,      -- дані з employees (псевдонім e)
+    s.*,      -- дані з shippers (псевдонім s)
+    sup.*     -- дані з suppliers (псевдонім sup)
+FROM 
+    order_details AS od
+INNER JOIN 
+    orders AS o ON od.order_id = o.id
+INNER JOIN 
+    customers AS c ON o.customer_id = c.id
+INNER JOIN 
+    employees AS e ON o.employee_id = e.employee_id
+INNER JOIN 
+    shippers AS s ON o.shipper_id = s.id
+INNER JOIN 
+    products AS p ON od.product_id = p.id
+INNER JOIN 
+    categories AS cat ON p.category_id = cat.id
+INNER JOIN 
+    suppliers AS sup ON p.supplier_id = sup.id;
+
+4.1 Rows Count
+
+SELECT 
+    COUNT(*) AS total_rows
+FROM 
+    order_details AS od
+INNER JOIN 
+    orders AS o ON od.order_id = o.id
+INNER JOIN 
+    customers AS c ON o.customer_id = c.id
+INNER JOIN 
+    employees AS e ON o.employee_id = e.employee_id
+INNER JOIN 
+    shippers AS s ON o.shipper_id = s.id
+INNER JOIN 
+    products AS p ON od.product_id = p.id
+INNER JOIN 
+    categories AS cat ON p.category_id = cat.id
+INNER JOIN 
+    suppliers AS sup ON p.supplier_id = sup.id;
+
+Кількість рядків - 518.
+
+4.2 Inner to left/right
+
+SELECT 
+    COUNT(*) AS total_rows
+FROM 
+    order_details AS od
+INNER JOIN 
+    orders AS o ON od.order_id = o.id
+RIGHT JOIN 
+    customers AS c ON o.customer_id = c.id
+LEFT JOIN 
+    employees AS e ON o.employee_id = e.employee_id
+LEFT JOIN 
+    shippers AS s ON o.shipper_id = s.id
+RIGHT JOIN 
+    products AS p ON od.product_id = p.id
+INNER JOIN 
+    categories AS cat ON p.category_id = cat.id
+INNER JOIN 
+    suppliers AS sup ON p.supplier_id = sup.id;
+
+Кількість рядків все одно залишилась 518. Це означає, що всі рядки в таблицях зліва мають відповідні рядки в таблицях справа і навпаки.
+
+4.3-8 Remainings
+
+SELECT 
+    cat.name AS category_name,
+    COUNT(*) AS row_count,
+    AVG(od.quantity) AS avg_quantity
+FROM 
+    order_details AS od
+INNER JOIN 
+    orders AS o ON od.order_id = o.id
+INNER JOIN 
+    customers AS c ON o.customer_id = c.id
+INNER JOIN 
+    employees AS e ON o.employee_id = e.employee_id
+INNER JOIN 
+    shippers AS s ON o.shipper_id = s.id
+INNER JOIN 
+    products AS p ON od.product_id = p.id
+INNER JOIN 
+    categories AS cat ON p.category_id = cat.id
+INNER JOIN 
+    suppliers AS sup ON p.supplier_id = sup.id
+WHERE 
+    e.employee_id > 3 AND e.employee_id <= 10
+GROUP BY 
+    cat.name
+HAVING 
+    AVG(od.quantity) > 21
+ORDER BY 
+    row_count DESC
+LIMIT 4 OFFSET 1;
